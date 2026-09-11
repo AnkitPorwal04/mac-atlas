@@ -1,5 +1,7 @@
 # MAC Atlas
 
+Live website: https://mac-atlas.vercel.app
+
 A local MAC-address evidence lookup page. No npm dependencies, remote lookup APIs, analytics, saved search history, active scanning, or packet interception.
 
 ## Run
@@ -25,6 +27,12 @@ Access-point labels may suggest an area if your records contain them. Logged des
 
 ## Data And Privacy
 
+### Hosted Edition
+
+`npm run build` creates `dist/` for Vercel. It uses the available IEEE snapshot, or downloads one when none exists. Only the page, browser scripts, stylesheet and public registry snapshot are published. No server or ARP endpoint is deployed. MAC matching and CSV processing happen in the browser; the app does not upload entered addresses or records. Vercel still receives ordinary page/asset requests and their standard request metadata.
+
+The GitHub repository can remain private while the hosted site is public. A fresh GitHub deployment downloads registry data during the build; a download failure stops deployment rather than publishing an empty registry. The local `npm start` edition retains its original cache-check functionality.
+
 The update command downloads full public datasets from IEEE's `standards-oui.ieee.org` endpoints (`oui/oui.csv`, `oui28/mam.csv`, `oui36/oui36.csv`, `iab/iab.csv`). Entered addresses are never sent to IEEE. Data is attributed to the [IEEE Registration Authority](https://standards.ieee.org/products-programs/regauth/), not claimed as original app data. Run the update command periodically and restart the app; the displayed date is the snapshot download date, not an assignment date. A failed update preserves the previous snapshot.
 
 Lookups are served locally and are not logged by this server. Host/Origin/Fetch-Site checks and a custom header restrict cache access to the local UI. Files are served from an explicit allowlist; imported strings render as text. Other local software can still access the localhost API; this is not a multi-user authenticated service. macOS is required for the built-in cache reader; other systems can use the registry and CSV import.
@@ -38,4 +46,4 @@ npm run check
 
 Node tests cover normalization, address flags, longest-prefix selection, quoted CSV, import limits, ARP parsing, missing-data states, API validation, file allowlisting, and cross-origin restrictions. No real neighbor data is used by the automated server tests.
 
-Verification: 9 Node tests and syntax checks pass. Desktop (1440px) and mobile (390px) browser checks exercised registry lookup, local-address classification, CSV matching, literal rendering of HTML-like input, JSON download, clearing records, invalid-address recovery, and a mocked positive cache response. The actual macOS cache reader was also exercised with the public example address and returned no match. No target-device investigation or active scanning was performed.
+Verification: 10 Node tests and syntax checks pass, including static build isolation. Desktop (1440px) and mobile (390px) browser checks exercised registry lookup, local-address classification, CSV matching, literal rendering of HTML-like input, JSON download, clearing records, invalid-address recovery, and a mocked positive cache response. The actual macOS cache reader was also exercised with the public example address and returned no match. Live Vercel checks confirmed vendor lookup, CSV matching, export, responsive layout, no lookup uploads, and absent ARP/server endpoints. No target-device investigation or active scanning was performed.
