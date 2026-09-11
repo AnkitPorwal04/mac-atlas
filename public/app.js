@@ -1,5 +1,19 @@
-import { normalizeMac, importRecords } from './core.js';
+import { normalizeMac, importRecords, analyzeMac, lookupVendor } from './core.js';
 const $ = id => document.getElementById(id);
+const hosted = document.documentElement.dataset.hosted === 'true';
+let snapshotPromise;
+function snapshot() {
+  return snapshotPromise ||= api('/registry.json').catch(error => { snapshotPromise = null; throw error; });
+}
+if (hosted) {
+  document.querySelector('.local-tag').textContent = 'BROWSER WORKSPACE';
+  document.querySelector('footer span').textContent = 'MAC ATLAS / WEB EDITION';
+  const card = $('neighbors').closest('article');
+  card.querySelector('h3').textContent = 'Local app required for ARP';
+  card.querySelector('p').textContent = 'This website cannot read your computer\'s network cache. Run the local app on your Mac to check existing IPv4 neighbor records.';
+  card.querySelector('.fine').textContent = 'Hosted lookups download a public IEEE snapshot and match in this browser. Entered MACs and imported CSV records are not uploaded by the app. Hosting infrastructure still receives ordinary page and asset requests.';
+  $('neighbors').hidden = true;
+}
 let current = null, records = [], filename = '', neighbors = null, sequence = 0;
 const labels = { ip: 'Local IP', hostname: 'Hostname', accesspoint: 'Access point / area label', switchport: 'Switch port', lastseen: 'Record timestamp', destination: 'Logged destination', bytes: 'Bytes (as recorded)' };
 
@@ -14,7 +28,7 @@ function details(element, values) {
 async function api(path, options) {
   let response;
   try { response = await fetch(path, { ...options, signal: AbortSignal.timeout(10000) }); }
-  catch (error) { throw new Error(error.name === 'TimeoutError' ? 'The local request timed out. Please try again.' : 'Cannot reach the local server. Check that npm start is running.'); }
+  catch (error) { throw new Error(error.name === 'TimeoutError' ? 'The request timed out. Please try again.' : hosted ? 'Cannot download the registry. Check your connection and try again.' : 'Cannot reach the local server. Check that npm start is running.'); }
   let result;
   try { result = await response.json(); } catch { throw new Error('The server returned an unexpected response. Please try again.'); }
   if (!response.ok) throw new Error(result.error || 'Request failed.'); return result;
@@ -45,6 +59,7 @@ function render(result) {
   text('vendor-name', result.vendor?.organization || result.special || (result.group ? (result.local ? 'Locally assigned group address' : 'Group destination address') : result.local ? 'Local address assignment' : result.registryAvailable ? 'No registered match' : 'Registry not loaded'));
   text('vendor-note', result.vendor ? 'Exact longest-prefix match in the local IEEE snapshot. Assignment holder, not confirmed laptop model or owner.' : !result.eligible ? 'Vendor attribution is not reliable for this address class. Local assignment may be randomized, manually configured, or virtual; the bit alone does not distinguish them.' : result.registryAvailable ? 'No matching assignment in this snapshot. An unknown result is not evidence of a suspicious device.' : 'Address analysis works. Run npm run update-registry and restart the server for vendor results.');
   details($('vendor-details'), result.vendor ? [['Assigned prefix', `${result.vendor.prefix} / ${result.vendor.bits} bits`], ['Block capacity', `${result.vendor.blockSize.toLocaleString()} addresses`], ['Registrant postal address', result.vendor.address], ['Snapshot downloaded', new Date(result.downloadedAt).toLocaleString()]] : []);
+  if (hosted && !result.registryAvailable && result.eligible) text('vendor-note', 'Address analysis works. Check your connection and retry the lookup to download vendor data.');
   $('vendor-source').hidden = !result.vendor; if (result.vendor) $('vendor-source').href = result.vendor.source;
   details($('signature'), [['Administration', result.administration], ['Delivery', result.delivery], ['U/L bit', result.local ? '1 / locally assigned' : '0 / universal format'], ['I/G bit', result.group ? '1 / group' : '0 / individual'], ['Address length', '48 bits / 6 octets']]);
   text('signature-note', result.special ? 'This is a special address, not an individual laptop identifier.' : 'These are facts encoded in the address. A MAC can be changed or spoofed, so they do not authenticate a device.');
@@ -55,7 +70,17 @@ $('lookup-form').addEventListener('submit', async event => {
   event.preventDefault(); const id = ++sequence;
   $('error').hidden = true; $('lookup').disabled = true; text('lookup', 'Looking up...');
   current = null; neighbors = null; $('results').hidden = true; $('empty').hidden = false; $('neighbors').disabled = true; $('neighbor-results').replaceChildren(); $('record-results').replaceChildren();
-  try { const mac = normalizeMac($('mac').value); const result = await api(`/api/lookup?mac=${encodeURIComponent(mac)}`); if (id === sequence) render(result); }
+  try {
+    const mac = normalizeMac($('mac').value);
+    let result;
+    if (hosted) {
+      const info = analyzeMac(mac);
+      let data = null;
+      try { data = await snapshot(); } catch { text('notice', 'Registry download unavailable. Address analysis still works; retry to load vendor data.'); }
+      result = { ...info, vendor: data ? lookupVendor(info, data.entries) : null, registryAvailable: Boolean(data), downloadedAt: data?.downloadedAt };
+    } else result = await api(`/api/lookup?mac=${encodeURIComponent(mac)}`);
+    if (id === sequence) render(result);
+  }
   catch (error) { if (id === sequence) fail(error.message); }
   finally { if (id === sequence) { $('lookup').disabled = false; text('lookup', 'Look up address →'); } }
 });
@@ -63,7 +88,7 @@ $('example').onclick = () => { $('mac').value = '28:6F:B9:12:34:56'; $('lookup-f
 $('copy').onclick = async () => { if (!current) return; try { await navigator.clipboard.writeText(current.mac); text('notice', 'MAC address copied.'); } catch { text('notice', 'Clipboard unavailable. Select the address to copy it.'); } };
 $('export').onclick = () => { if (current) save(`mac-atlas-${current.hex}.json`, JSON.stringify({ exportedAt: new Date().toISOString(), lookup: current, localCache: neighbors, importedSource: filename || null, importedRecords: records.filter(row => row.mac === current.mac), note: 'Registry postal addresses belong to organizations, not devices. Cache and imported records are not proof of current presence or identity.' }, null, 2), 'application/json'); };
 $('neighbors').onclick = async () => {
-  if (!current) return;
+  if (!current || hosted) return;
   const id = sequence, mac = current.mac; $('neighbors').disabled = true; text('neighbor-results', 'Reading existing cache entries...');
   try {
     const data = await api(`/api/neighbor?mac=${encodeURIComponent(mac)}`, { headers: { 'X-Mac-Atlas': 'local-check' } });
@@ -88,4 +113,4 @@ $('csv').onchange = async () => {
   $('csv').value = '';
 };
 $('clear-import').onclick = () => { importSequence++; records = []; filename = ''; $('record-results').replaceChildren(); text('import-status', 'Imported records cleared from this tab.'); $('clear-import').hidden = true; };
-api('/api/status').then(status => text('registry-status', status.available ? `IEEE snapshot / ${Object.values(status.counts).reduce((a,b) => a+b,0).toLocaleString()} assignments / ${new Date(status.downloadedAt).toLocaleDateString()}` : 'Registry unavailable / address analysis ready')).catch(() => text('registry-status', 'Local server unavailable. Start it with npm start.'));
+(hosted ? snapshot().then(data => ({ ...data, available: true })) : api('/api/status')).then(status => text('registry-status', status.available ? `IEEE snapshot / ${Object.values(status.counts).reduce((a,b) => a+b,0).toLocaleString()} assignments / ${new Date(status.downloadedAt).toLocaleDateString()}` : 'Registry unavailable / address analysis ready')).catch(() => text('registry-status', hosted ? 'Registry download unavailable / retry a lookup to load it.' : 'Local server unavailable. Start it with npm start.'));
