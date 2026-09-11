@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#172b29"><title>MAC Atlas | Follow the evidence</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%23172b29'/%3E%3Cpath d='M9 29V11l11 12 11-12v18' stroke='%23dcf37b' stroke-width='3' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header><a class="brand" href="/" aria-label="MAC Atlas home"><span class="mark">M</span> MAC ATLAS <small>NETWORK FIELD NOTES</small></a><span class="local-tag"><i></i> LOCAL WORKSPACE</span></header>
+  <main>
+    <section class="intro"><div><p class="eyebrow">01 / ADDRESS INTELLIGENCE</p><h1>One address.<br><em>Follow the evidence.</em></h1><p class="lede">Find its registered vendor. Read its address signature.<br>Connect it to records from your own network.</p></div><div class="address-art" aria-hidden="true"><span>48 BITS / SIX OCTETS</span><div>AA : BB : CC<br><b>DD : EE : FF</b></div><p>IDENTIFY &nbsp; / &nbsp; CORRELATE &nbsp; / &nbsp; EXPORT</p></div></section>
+    <section class="search-panel" aria-label="MAC address lookup">
+      <form id="lookup-form"><label for="mac">MAC ADDRESS</label><div class="input-row"><input id="mac" name="mac" placeholder="28:6F:B9:12:34:56" spellcheck="false" autocomplete="off" maxlength="40" required aria-describedby="input-help error"><button id="lookup" class="primary">Look up address <span aria-hidden="true">&rarr;</span></button></div></form>
+      <div class="search-foot"><p id="input-help">Colon, hyphen, dotted, or 12-digit hexadecimal.</p><button id="example" class="text-button" type="button">Try an example &nearr;</button></div>
+      <p id="error" class="error" role="alert" hidden></p>
+    </section>
+    <div class="source-strip"><span><i></i> <b id="registry-status">Checking registry snapshot...</b></span><span>No third-party lookup requests. No saved search history.</span></div>
+    <section id="empty" class="empty"><div class="crosshair" aria-hidden="true">+</div><div><h2>Start with what you know.</h2><p>Enter a MAC address above. Results separate registry facts, address-bit analysis, and your own network evidence.</p></div><span class="pill">READY WHEN YOU ARE</span></section>
+    <section id="results" hidden aria-label="Lookup results">
+      <div class="section-head"><div><p class="eyebrow">ADDRESS DOSSIER</p><h2 id="result-mac" tabindex="-1"></h2></div><div class="actions"><button id="copy">Copy MAC</button><button id="export">Export JSON &darr;</button></div></div>
+      <div class="result-grid"><article class="vendor-card"><div class="card-top"><span class="eyebrow">REGISTRY MATCH</span><span id="vendor-badge" class="pill"></span></div><h3 id="vendor-name"></h3><p id="vendor-note"></p><dl id="vendor-details"></dl><a id="vendor-source" target="_blank" rel="noreferrer">View IEEE source &nearr;</a></article><article class="signature-card"><p class="eyebrow">ADDRESS SIGNATURE</p><dl id="signature"></dl><p id="signature-note" class="muted"></p></article></div>
+      <details class="formats"><summary>Address formats &amp; bit-level detail <span>HEX / BINARY</span></summary><dl id="formats"></dl></details>
+    </section>
+    <section class="evidence"><div class="section-head"><div><p class="eyebrow">02 / ADD NETWORK CONTEXT</p><h2>Give the address a paper trail.</h2></div><span class="pill">YOUR RECORDS, CLEARLY LABELED</span></div><div class="evidence-grid"><article><span class="step">A</span><h3>Check this Mac's cache</h3><p>Read existing IPv4 neighbor records on the computer running this app. A match can reveal a local IP and network interface.</p><button id="neighbors" disabled>Check local ARP cache &rarr;</button><p class="fine">For your own or authorized network. Read-only: no scanning, packet capture, or device connection. Cache entries may be stale.</p><div id="neighbor-results" class="evidence-output" aria-live="polite"></div></article><article><span class="step">B</span><h3>Match your router records</h3><p>Import a CSV export to find matching hostnames, access points, switch ports, timestamps, and logged destinations.</p><div class="actions"><label class="file-button" for="csv">Import CSV &uarr;</label><input type="file" id="csv" accept=".csv,text/csv"><button id="template" class="text-button">Get template</button><button id="clear-import" class="text-button" hidden>Clear</button></div><p class="fine">Processed only in this browser tab. Never uploaded or saved. Up to 2 MB / 10,000 rows. Import only records you are authorized to inspect.</p><p id="import-status" role="status"></p></article></div><div id="record-results" class="record-results" aria-live="polite"></div></section>
+    <section class="reading-guide"><h2>Read the source.<br>Not between the lines.</h2><div><h3>Registry = assignment holder</h3><p>The registered organization may be an adapter maker or integrator. Its postal address is the company's address, never the laptop's location.</p></div><div><h3>Network records = context</h3><p>An access-point label can suggest an area. A destination log records a connection, not screen contents. Imported rows retain their own timestamps; they aren't live tracking.</p></div></section>
+    <p id="notice" role="status" class="notice"></p>
+  </main><footer><span>MAC ATLAS / LOCAL EDITION</span><a href="https://standards.ieee.org/products-programs/regauth/" target="_blank" rel="noreferrer">Data: IEEE Registration Authority &nearr;</a><span>Evidence over assumptions.</span></footer>
+</body>
+</html>
