@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
+    "build": "node build.mjs",
     "update-registry": "node update-registry.mjs",
     "test": "node --test tests/*.test.mjs",
     "check": "node --check server.mjs && node --check update-registry.mjs && node --check public/app.js && node --check public/core.js"
